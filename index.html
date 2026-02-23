@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>С Днём Рождения, Алиса!</title>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Pacifico&display=swap');
+
+  *{
+    margin:0;padding:0;box-sizing:border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  body{
+    font-family:'Montserrat',sans-serif;
+    overflow:hidden;
+    width:100vw;height:100vh;
+    background:#0b1d2a;
+  }
+
+  .screen{
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    width:100vw;height:100vh;position:fixed;top:0;left:0;z-index:1;
+  }
+  .screen.active{display:flex}
+  .black-screen{background:#000}
+
+  .btn{
+    padding:16px 48px;font-size:1.1rem;font-weight:700;border:none;border-radius:50px;
+    cursor:pointer;position:relative;z-index:2;margin-top:30px;
+    transition:transform .2s,box-shadow .2s;text-transform:uppercase;letter-spacing:2px;
+    outline: none;
+  }
+  .btn:hover{transform:translateY(-3px) scale(1.05)}
+  .btn:active{transform:translateY(0) scale(.98)}
+  .btn:disabled{opacity:0.6; cursor:not-allowed; transform:none;}
+
+  .btn-primary{
+    background:linear-gradient(135deg,#ff6f61,#ff9a76);color:#fff;
+    box-shadow:0 8px 25px rgba(255,111,97,.4);
+  }
+  .btn-gold{
+    background:linear-gradient(135deg,#ffd700,#ffaa00);color:#1a0a00;
+    box-shadow:0 8px 25px rgba(255,215,0,.4);
+  }
+  .btn-green{
+    background:linear-gradient(135deg,#00e6a0,#00c9a7);color:#fff;
+    box-shadow:0 8px 25px rgba(0,230,160,.4);
+  }
+
+  #screen-splash{
+    background:linear-gradient(150deg,#0b1d2a,#14303f 40%,#1a3d4f 70%,#0b1d2a);
+    text-align:center;overflow:hidden;
+  }
+
+  .splash-bg-circles{position:absolute;width:100%;height:100%;top:0;left:0;z-index:0;overflow:hidden}
+
+  .circle{position:absolute;border-radius:50%;opacity:.07;will-change:transform}
+  .circle:nth-child(1){width:400px;height:400px;background:#ff6f61;top:-100px;left:-100px;animation:floatC 12s ease-in-out infinite}
+  .circle:nth-child(2){width:300px;height:300px;background:#00d4aa;bottom:-50px;right:-80px;animation:floatC 10s ease-in-out infinite reverse}
+  .circle:nth-child(3){width:200px;height:200px;background:#ffd700;top:30%;right:10%;animation:floatC 8s ease-in-out infinite 2s}
+
+  @keyframes floatC{
+    0%,100%{transform:translate(0,0) scale(1)}
+    33%{transform:translate(30px,-20px) scale(1.1)}
+    66%{transform:translate(-20px,15px) scale(.95)}
+  }
+
+  .splash-stars{position:absolute;width:100%;height:100%;top:0;left:0;z-index:1}
+
+  .star{
+    position:absolute;width:3px;height:3px;background:#fff;border-radius:50%;
+    will-change:opacity,transform;animation:twink 2s ease-in-out infinite;
+  }
+  .star.big{width:5px;height:5px;box-shadow:0 0 6px 2px rgba(255,255,255,.3)}
+
+  @keyframes twink{0%,100%{opacity:.15;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
+
+  .splash-emoji-row{
+    display:flex;gap:20px;font-size:clamp(2rem,6vw,3.5rem);
+    margin-bottom:10px;position:relative;z-index:2;
+    animation:ePop 1s ease-out .3s both;
+  }
+  .splash-emoji-row span{animation:eFloat 3s ease-in-out infinite}
+  .splash-emoji-row span:nth-child(2){animation-delay:.5s}
+  .splash-emoji-row span:nth-child(3){animation-delay:1s}
+
+  @keyframes eFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  @keyframes ePop{0%{opacity:0;transform:scale(0) rotate(-15deg)}60%{transform:scale(1.2) rotate(3deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+
+  .splash-title{
+    font-family:'Pacifico',cursive;font-size:clamp(2rem,7vw,4.5rem);color:#fff;
+    text-shadow:0 0 25px rgba(255,111,97,.5),0 4px 12px rgba(0,0,0,.4);
+    animation:tFloat 3s ease-in-out infinite,tAppear 1.2s ease-out;
+    position:relative;z-index:2;line-height:1.3;padding:0 20px;
+  }
+  @keyframes tFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+  @keyframes tAppear{0%{opacity:0;transform:scale(.5) translateY(40px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+
+  .splash-subtitle{position:relative;z-index:2;color:rgba(255,255,255,.5);font-size:.95rem;margin-top:12px;letter-spacing:3px;text-transform:uppercase}
+  .splash-date{position:relative;z-index:2;color:#ffd700;font-weight:700;font-size:1rem;margin-top:6px;text-shadow:0 0 10px rgba(255,215,0,.3)}
+  .splash-bottom-decor{position:absolute;bottom:30px;display:flex;gap:15px;z-index:2;opacity:.3;font-size:1.5rem}
+
+  #screen-wishes{
+    background:linear-gradient(150deg,#0b1d2a,#163040 50%,#0b1d2a);
+    padding:30px 20px;gap:20px;overflow-y:auto;
+  }
+
+  .wishes-header{text-align:center;position:relative;z-index:2}
+  .wishes-icon{font-size:2.5rem;margin-bottom:5px}
+  .wishes-title{font-family:'Pacifico',cursive;font-size:clamp(1.4rem,4vw,2.2rem);color:#ffd700;text-shadow:0 0 15px rgba(255,215,0,.4)}
+  .wishes-line{width:60px;height:3px;background:linear-gradient(90deg,transparent,#ff6f61,transparent);border-radius:2px;margin:8px auto 0}
+
+  .wish-card{
+    background:rgba(255,255,255,.05);backdrop-filter:blur(15px);
+    border:1px solid rgba(255,255,255,.08);border-radius:20px;
+    padding:28px 30px;max-width:500px;width:90%;color:#fff;
+    font-size:1.05rem;line-height:1.7;position:relative;overflow:hidden;
+    animation:cardIn .8s ease-out both;text-align:center;
+  }
+  .wish-card:nth-child(3){animation-delay:.3s}
+
+  @keyframes cardIn{0%{opacity:0;transform:translateY(30px) scale(.95)}100%{opacity:1;transform:translateY(0) scale(1)}}
+
+  .wish-card::after{
+    content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);
+    animation:shimmer 4s ease-in-out infinite;
+  }
+  @keyframes shimmer{0%{left:-100%}100%{left:100%}}
+
+  .wish-number{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:38px;height:38px;background:linear-gradient(135deg,#ff6f61,#ff9a76);
+    border-radius:50%;font-weight:900;font-size:.9rem;margin-bottom:14px;
+    box-shadow:0 4px 15px rgba(255,111,97,.3);
+  }
+  .wish-card-emoji{position:absolute;top:14px;right:18px;font-size:1.3rem;opacity:.5}
+  .wish-card-corner{position:absolute;bottom:-8px;left:-8px;width:50px;height:50px;border-radius:50%;background:rgba(255,111,97,.06)}
+
+  #screen-video{background:linear-gradient(150deg,#0b1d2a,#163040);text-align:center;gap:25px}
+  .video-section-title{color:#ffd700;font-family:'Pacifico',cursive;font-size:1.5rem;text-shadow:0 0 10px rgba(255,215,0,.3)}
+
+  .video-placeholder{
+    width:90%;max-width:560px;aspect-ratio:16/9;
+    background:rgba(255,255,255,.04);border:2px dashed rgba(255,255,255,.15);
+    border-radius:20px;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;color:rgba(255,255,255,.5);font-size:1.1rem;gap:12px;
+    position: relative; overflow: hidden; padding: 0;
+  }
+  .play-icon{
+    width:70px;height:70px;background:rgba(255,111,97,.2);border:2px solid rgba(255,111,97,.4);
+    border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;
+    animation:playP 2s ease-in-out infinite;
+  }
+  @keyframes playP{0%,100%{transform:scale(1);box-shadow:0 0 0 rgba(255,111,97,0)}50%{transform:scale(1.05);box-shadow:0 0 20px rgba(255,111,97,.3)}}
+
+  .video-cat-decor{display:flex;gap:30px;font-size:2rem;opacity:.4;margin-top:10px}
+
+  #screen-slots{
+    background:linear-gradient(150deg,#1a0f05,#2d1a0a 30%,#1a0f05);
+    text-align:center;gap:18px;overflow:hidden;
+  }
+  .slots-title{color:rgba(255,215,0,.6);font-size:.85rem;letter-spacing:4px;text-transform:uppercase}
+
+  .slots-frame{
+    background:linear-gradient(180deg,#1f1208,#150d05);border:4px solid #ffd700;
+    border-radius:20px;padding:25px 30px 18px;
+    box-shadow:0 0 40px rgba(255,215,0,.15),inset 0 0 30px rgba(0,0,0,.5);position:relative;
+  }
+  .slots-frame-label{
+    position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,#ffd700,#ffaa00);color:#1a0a00;
+    padding:5px 22px;border-radius:20px;font-weight:900;font-size:.85rem;
+    letter-spacing:3px;white-space:nowrap;box-shadow:0 4px 15px rgba(255,215,0,.3);
+  }
+
+  .slots-container{display:flex;gap:12px;margin-top:10px}
+
+  .slot-reel-wrapper{
+    width:90px;height:110px;overflow:hidden;
+    background:linear-gradient(180deg,#fffef5,#fff8e1);border-radius:12px;
+    border:3px solid #b8860b;position:relative;box-shadow:inset 0 0 15px rgba(0,0,0,.15);
+  }
+  .slot-reel-wrapper::before,.slot-reel-wrapper::after{
+    content:'';position:absolute;left:0;right:0;height:20px;z-index:2;pointer-events:none;
+  }
+  .slot-reel-wrapper::before{top:0;background:linear-gradient(180deg,rgba(255,252,240,.95),transparent)}
+  .slot-reel-wrapper::after{bottom:0;background:linear-gradient(0deg,rgba(255,252,240,.95),transparent)}
+
+  .slot-reel{display:flex;flex-direction:column;align-items:center}
+  .slot-symbol{width:90px;height:110px;display:flex;align-items:center;justify-content:center;font-size:3.5rem;flex-shrink:0}
+
+  .slots-lights{display:flex;justify-content:center;gap:7px;margin-top:12px}
+  .slot-light{width:8px;height:8px;border-radius:50%;animation:lBlink .5s ease-in-out infinite alternate}
+  .slot-light:nth-child(odd){background:#ff6f61}
+  .slot-light:nth-child(even){background:#ffd700;animation-delay:.25s}
+  @keyframes lBlink{0%{opacity:.3;box-shadow:none}100%{opacity:1;box-shadow:0 0 6px currentColor}}
+
+  .slots-decor-text{color:rgba(255,215,0,.25);font-size:.75rem;letter-spacing:6px;text-transform:uppercase}
+
+  .jackpot-text{
+    display:none;font-size:clamp(2rem,8vw,3.5rem);font-weight:900;color:#ffd700;
+    text-shadow:0 0 25px rgba(255,215,0,.8),0 0 50px rgba(255,215,0,.3);
+    animation:jpPulse .5s ease-in-out infinite alternate;letter-spacing:4px;
+  }
+  .jackpot-text.visible{display:block}
+  @keyframes jpPulse{0%{transform:scale(1)}100%{transform:scale(1.06);text-shadow:0 0 40px rgba(255,215,0,1),0 0 70px rgba(255,100,0,.5)}}
+
+  .jackpot-sub{display:none;color:rgba(255,215,0,.6);font-size:.9rem}
+  .jackpot-sub.visible{display:block}
+
+  #btn-claim{display:none}
+  #btn-claim.visible{display:inline-block}
+
+  #screen-gift{
+    background:linear-gradient(150deg,#0b1d2a,#163040 50%,#0b1d2a);
+    text-align:center;gap:16px;cursor:pointer;overflow:hidden;
+    outline: none;
+  }
+  .gift-top-decor{font-size:2rem;opacity:.3;letter-spacing:15px;position:relative;z-index:2}
+  .gift-instruction{color:rgba(255,255,255,.7);font-size:1.05rem;position:relative;z-index:2}
+  .gift-counter{color:#ffd700;font-size:1.2rem;font-weight:700;min-height:30px}
+
+  .gift-progress{
+    display:flex;gap:6px;position:relative;z-index:2;
+    flex-wrap: wrap; justify-content: center; max-width: 300px;
+  }
+  .gift-progress-dot{
+    width:12px;height:12px;border-radius:50%;
+    background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);
+    transition:all .3s;
+  }
+  .gift-progress-dot.filled{background:#ff6f61;border-color:#ff6f61;box-shadow:0 0 10px rgba(255,111,97,.5)}
+
+  .gift-box-container{position:relative;width:200px;height:230px;z-index:2; outline:none;}
+  .gift-box{width:100%;height:100%;position:relative}
+  .gift-box.shake{animation:gShake .3s ease-in-out}
+  @keyframes gShake{
+    0%,100%{transform:rotate(0) scale(1)}
+    10%{transform:rotate(-8deg) scale(1.06)}
+    20%{transform:rotate(8deg) scale(1.06)}
+    30%{transform:rotate(-6deg) scale(1.04)}
+    40%{transform:rotate(6deg) scale(1.04)}
+    50%{transform:rotate(-3deg) scale(1.02)}
+    60%{transform:rotate(3deg) scale(1.02)}
+    80%{transform:rotate(1deg)}
+  }
+
+  .gift-box-body{
+    position:absolute;bottom:0;width:180px;height:140px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,#ff6f61,#e85d50);border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.3);
+  }
+  .gift-box-body::before{content:'';position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:28px;background:linear-gradient(135deg,#ffd700,#ffaa00)}
+  .gift-box-body::after{content:'';position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:28px;background:linear-gradient(135deg,#ffd700,#ffaa00)}
+
+  .gift-box-lid{
+    position:absolute;top:0;width:200px;height:50px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,#ff6f61,#d4483c);border-radius:10px 10px 4px 4px;
+    box-shadow:0 4px 15px rgba(0,0,0,.2);
+    transition:transform .6s cubic-bezier(.68,-.55,.27,1.55);transform-origin:left center;z-index:3;
+  }
+  .gift-box-lid::before{content:'';position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:28px;background:linear-gradient(135deg,#ffd700,#ffaa00)}
+
+  .gift-bow{position:absolute;top:-22px;left:50%;transform:translateX(-50%);width:60px;height:30px;z-index:4}
+  .gift-bow::before,.gift-bow::after{content:'';position:absolute;width:30px;height:30px;background:#ffd700;top:0}
+  .gift-bow::before{left:0;border-radius:50% 50% 0 50%;transform:rotate(-30deg)}
+  .gift-bow::after{right:0;border-radius:50% 50% 50% 0;transform:rotate(30deg)}
+  .gift-bow-center{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:16px;height:16px;background:#ffc107;border-radius:50%;z-index:5}
+  .gift-shadow{position:absolute;bottom:-15px;left:50%;transform:translateX(-50%);width:160px;height:15px;background:radial-gradient(ellipse,rgba(0,0,0,.3),transparent);border-radius:50%}
+
+  .gift-opened .gift-box-lid{transform:translateX(-50%) rotate(-120deg) translateY(-30px)}
+
+  .gift-content{
+    display:none;position:absolute;top:-30px;left:50%;transform:translateX(-50%);
+    animation:gReveal .8s ease-out;z-index:5;
+  }
+  .gift-content.visible{display:block}
+  @keyframes gReveal{
+    0%{opacity:0;transform:translateX(-50%) translateY(50px) scale(.5)}
+    60%{transform:translateX(-50%) translateY(-20px) scale(1.1)}
+    100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+  }
+
+  .hedgehog-placeholder{
+    width:170px;height:170px;background:rgba(255,255,255,.08);
+    border:2px dashed rgba(255,255,255,.25);border-radius:20px;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    color:#fff;font-size:4rem;gap:8px;
+  }
+  .hedgehog-placeholder span{font-size:.85rem;opacity:.5}
+
+  .gift-bottom-decor{position:absolute;bottom:25px;font-size:1.5rem;opacity:.2;letter-spacing:12px;z-index:2}
+
+  #screen-final{
+    background:linear-gradient(150deg,#0b1d2a,#163040 50%,#0b1d2a);
+    text-align:center;gap:15px; 
+    overflow-y:auto; overflow-x:hidden; padding: 20px 0;
+  }
+  .final-sparkles-top{font-size:1.5rem;letter-spacing:10px;opacity:.4}
+  .final-icon{font-size:4rem;animation:iconBounce 2s ease-in-out infinite}
+  @keyframes iconBounce{0%,100%{transform:scale(1) rotate(0)}25%{transform:scale(1.15) rotate(-5deg)}50%{transform:scale(1) rotate(0)}75%{transform:scale(1.1) rotate(5deg)}}
+
+  .final-text{font-family:'Pacifico',cursive;font-size:clamp(1.5rem,5vw,2.5rem);color:#fff;text-shadow:0 0 20px rgba(255,111,97,.5)}
+  .final-sub{color:rgba(255,255,255,.5);font-size:0.95rem;max-width:400px;line-height:1.5;padding:0 20px}
+  .final-emoji-row{display:flex;gap:15px;font-size:1.8rem;opacity:.5;margin-top:5px}
+  .final-line{width:50px;height:2px;background:linear-gradient(90deg,transparent,rgba(255,111,97,.4),transparent);border-radius:1px}
+
+  .message-box {
+      margin-top: 15px; width: 90%; max-width: 400px;
+      background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px; padding: 20px; backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3); transition: all 0.5s ease;
+  }
+  .message-box.sent-mode { background: rgba(0, 230, 160, 0.1); border-color: rgba(0, 230, 160, 0.3); transform: scale(1.05); }
+  .message-title { color: #ffd700; font-weight: 700; margin-bottom: 12px; font-size: 1rem; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+  .glass-textarea {
+      width: 100%; height: 80px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px; padding: 12px; color: #fff; font-family: inherit; font-size: 0.95rem;
+      resize: none; outline: none; transition: border-color 0.3s;
+      user-select: text; -webkit-user-select: text;
+  }
+  .glass-textarea:focus { border-color: #ff6f61; box-shadow: 0 0 15px rgba(255,111,97,0.2); }
+  .glass-textarea::placeholder { color: rgba(255,255,255,0.3); }
+  
+  .msg-status-text {
+      display: none; color: #00e6a0; font-weight: 900; font-size: 1.2rem;
+      text-shadow: 0 0 15px rgba(0, 230, 160, 0.6); animation: tAppear 0.5s ease-out; margin: 20px 0;
+  }
+
+  .video-placeholder { position: relative; overflow: hidden; padding: 0; }
+  .new-emoji-gift { width: 150px; height: 150px; background: transparent !important; box-shadow: none !important; border: none !important; margin: 0 auto; display: flex; align-items: center; justify-content: center; z-index: 10; }
+  .super-gift-emoji { font-size: 9rem; line-height: 1; filter: drop-shadow(0 15px 25px rgba(0,0,0,0.6)); transition: transform 0.3s; }
+  .gift-opened .super-gift-emoji { animation: giftOpenAnim 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+  
+  @keyframes giftOpenAnim {
+      0% { transform: scale(1) translateY(0) rotate(0); opacity: 1; }
+      30% { transform: scale(1.3) translateY(-20px) rotate(15deg); opacity: 1; }
+      100% { transform: scale(0) translateY(-150px) rotate(-45deg); opacity: 0; }
+  }
+  
+  .hedgehog-emoji-mode { background: transparent !important; border: none !important; box-shadow: none !important; }
+  .hedgehog-emoji-mode span { display: none; }
+  .giant-hedgehog {
+      font-size: 8rem; line-height: 1; filter: drop-shadow(0 0 35px rgba(255,215,0,0.9));
+      animation: hedgehogFloat 2.5s ease-in-out infinite, hedgehogGlow 1.5s alternate infinite;
+  }
+  @keyframes hedgehogFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+  @keyframes hedgehogGlow { 0% { filter: drop-shadow(0 0 20px rgba(255,215,0,0.4)) scale(1); } 100% { filter: drop-shadow(0 0 50px rgba(255,215,0,1)) scale(1.05); } }
+
+  @keyframes screenShakeJuice {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-8px, 5px) rotate(-1deg); }
+      40% { transform: translate(8px, -5px) rotate(1deg); }
+      60% { transform: translate(-5px, -8px) rotate(0deg); }
+      80% { transform: translate(5px, 8px) rotate(0deg); }
+  }
+
+  .click-particle {
+      position: fixed; pointer-events: none; z-index: 9999; font-size: 1.8rem;
+      animation: particleOut 0.7s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+  }
+  @keyframes particleOut {
+      0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+      100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.5) rotate(200deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ЗАСТАВКА -->
+<div id="screen-splash" class="screen active">
+  <div class="splash-bg-circles"><div class="circle"></div><div class="circle"></div><div class="circle"></div></div>
+  <div class="splash-stars" id="stars"></div>
+  <div class="splash-emoji-row"><span>🎂</span><span>🎉</span><span>🎈</span></div>
+  <h1 class="splash-title">С Днём Рождения,<br>Алиса!</h1>
+  <div class="splash-subtitle">особенный день для особенного человека</div>
+  <div class="splash-date">🗓 2026</div>
+  <button class="btn btn-primary" id="btn-start">✨ Начать</button>
+  <div class="splash-bottom-decor">⭐ ⭐ ⭐ ⭐ ⭐</div>
+</div>
+
+<!-- ПОЖЕЛАНИЯ -->
+<div id="screen-wishes" class="screen">
+  <div class="wishes-header">
+    <div class="wishes-icon">📜</div>
+    <div class="wishes-title">Пожелания</div>
+    <div class="wishes-line"></div>
+  </div>
+  <div class="wish-card">
+    <span class="wish-card-emoji">🌸</span>
+    <div class="wish-card-corner"></div>
+    <div class="wish-number">1</div>
+    <p class="wish-text-p">Загрузка пожелания...</p>
+  </div>
+  <div class="wish-card">
+    <span class="wish-card-emoji">🌺</span>
+    <div class="wish-card-corner"></div>
+    <div class="wish-number">2</div>
+    <p class="wish-text-p">Загрузка пожелания...</p>
+  </div>
+  <button class="btn btn-primary" id="btn-wishes-next">Далее →</button>
+</div>
+
+<!-- ЧЁРНЫЙ 1 -->
+<div id="screen-black1" class="screen black-screen"></div>
+
+<!-- ВИДЕО -->
+<div id="screen-video" class="screen">
+  <div class="video-section-title">🎬 Специальный ролик</div>
+  
+  <div class="video-placeholder" id="video-placeholder-container">
+    <video id="cat-video" controls style="display:none; width:100%; height:100%; border-radius:18px; object-fit:cover; position:absolute; top:0; left:0; z-index: 2;"></video>
+    
+    <div id="video-fallback-content" style="display:flex; flex-direction:column; align-items:center; justify-content:center; width: 100%; height: 100%; z-index: 1;">
+      <div class="play-icon">▶</div>
+      <div id="video-fallback-text">Тут будет видео с котами 🐱</div>
+    </div>
+  </div>
+
+  <div class="video-cat-decor"><span>🐾</span><span>🐈</span><span>🐾</span></div>
+  <button class="btn btn-primary" id="btn-skip-video">Пропустить ⏭</button>
+</div>
+
+<!-- ЧЁРНЫЙ 2 -->
+<div id="screen-black2" class="screen black-screen"></div>
+
+<!-- СЛОТЫ -->
+<div id="screen-slots" class="screen">
+  <div class="slots-title">🎲 испытай удачу 🎲</div>
+  <div class="slots-frame">
+    <div class="slots-frame-label">★ MEGA SLOTS ★</div>
+    <div class="slots-container">
+      <div class="slot-reel-wrapper"><div class="slot-reel" id="reel1"></div></div>
+      <div class="slot-reel-wrapper"><div class="slot-reel" id="reel2"></div></div>
+      <div class="slot-reel-wrapper"><div class="slot-reel" id="reel3"></div></div>
+    </div>
+    <div class="slots-lights" id="slotLights"></div>
+  </div>
+  <div class="slots-decor-text">· fortune awaits ·</div>
+  <button class="btn btn-gold" id="btn-spin">🎰 КРУТИТЬ</button>
+  <div class="jackpot-text" id="jackpot-text">🏆 JACKPOT! 777 🏆</div>
+  <div class="jackpot-sub" id="jackpot-sub">Ты сорвала куш!</div>
+  <button class="btn btn-green" id="btn-claim">🎁 ЗАБРАТЬ ПРИЗ</button>
+</div>
+
+<!-- ПОДАРОК -->
+<div id="screen-gift" class="screen">
+  <div class="gift-top-decor">✦ ✦ ✦ ✦ ✦</div>
+  <div class="gift-instruction">Быстро нажимай, чтобы открыть!</div>
+  <div class="gift-counter" id="gift-counter">Осталось кликов: 15</div>
+  <div class="gift-progress" id="gift-progress"></div>
+  
+  <div class="gift-box-container" id="gift-box-container">
+    <div class="gift-box new-emoji-gift" id="gift-box">
+      <div class="super-gift-emoji" id="super-gift-emoji">🎁</div>
+      <div class="gift-shadow" style="bottom:-25px; width: 120px;"></div>
+    </div>
+
+    <div class="gift-content" id="gift-content">
+      <div class="hedgehog-placeholder hedgehog-emoji-mode">
+        <div id="prize-emoji" class="giant-hedgehog">🦔</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="btn-gift-next" style="display:none">Далее →</button>
+  <div class="gift-bottom-decor">🎀 🎀 🎀 🎀</div>
+</div>
+
+<!-- ФИНАЛ -->
+<div id="screen-final" class="screen">
+  <div class="final-sparkles-top">✨ ✨ ✨ ✨ ✨</div>
+  <div class="final-icon">🎉</div>
+  <div class="final-text">С Днём Рождения, Алиса!</div>
+  <div class="final-line"></div>
+  <div class="final-sub">Этот маленький сайт — для тебя. Пусть каждый день будет наполнен радостью и крутыми моментами! ✨</div>
+  <div class="final-emoji-row"><span>🎂</span><span>🎁</span><span>⭐</span><span>🎈</span><span>🔥</span></div>
+  
+  <div class="message-box" id="msg-box-container">
+    <div class="message-title" id="msg-title">Напиши мне пару слов! 💌</div>
+    <textarea class="glass-textarea" id="alice-message" placeholder="Твоё сообщение..."></textarea>
+    <div class="msg-status-text" id="msg-status-text">Сообщение улетело! ✨</div>
+    <button class="btn btn-green" id="btn-send-msg" style="margin-top:15px; padding:12px 30px; font-size:1rem;">Отправить 🚀</button>
+  </div>
+
+  <button class="btn btn-primary" id="btn-close" style="margin-top:10px;">Закрыть 🎉</button>
+</div>
+
+<script>
+// Глобальный объект (Будет перезаписан данными из БД)
+let CONFIG = {
+    clicksToOpenGift: 15,
+    giftEmoji: '🎁',
+    prizeEmoji: '🦔'
+};
+
+// Функция логирования в БД
+function logAction(eventText) {
+  fetch('/api/index', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'logAction', event: eventText })
+  }).catch(()=>{}); // Игнорируем ошибки, чтобы не ломать игру
+}
+
+// Загрузка конфига с Vercel Functions при старте
+async function loadLiveConfig() {
+  try {
+    const res = await fetch('/api/index?action=getConfig');
+    const data = await res.json();
+    if(data.success && data.config) {
+      if(data.config.clicksToOpenGift) CONFIG.clicksToOpenGift = parseInt(data.config.clicksToOpenGift);
+      if(data.config.giftEmoji) CONFIG.giftEmoji = data.config.giftEmoji;
+      if(data.config.prizeEmoji) CONFIG.prizeEmoji = data.config.prizeEmoji;
+      
+      // Тексты из БД
+      if(data.config.splashTitle) $$('.splash-title')[0].innerHTML = data.config.splashTitle;
+      const wishCards = $$('.wish-text-p');
+      if(wishCards[0] && data.config.wish1) wishCards[0].innerHTML = data.config.wish1;
+      if(wishCards[1] && data.config.wish2) wishCards[1].innerHTML = data.config.wish2;
+    }
+  } catch(e) { console.log('Используем локальный конфиг.'); }
+  
+  applyConfigToUI();
+}
+
+function applyConfigToUI() {
+    $('gift-counter').textContent = `Осталось кликов: ${CONFIG.clicksToOpenGift}`;
+    $('super-gift-emoji').textContent = CONFIG.giftEmoji;
+    $('prize-emoji').textContent = CONFIG.prizeEmoji;
+
+    const progContainer = $('gift-progress');
+    progContainer.innerHTML = '';
+    for(let i=0; i<CONFIG.clicksToOpenGift; i++){
+        const d = document.createElement('div');
+        d.className = 'gift-progress-dot';
+        progContainer.appendChild(d);
+    }
+}
+
+// Запускаем подгрузку конфига сразу
+loadLiveConfig();
+
+const $=id=>document.getElementById(id);
+const $$=s=>document.querySelectorAll(s);
+
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+let isMusicPlaying = false;
+let bgMusicInterval;
+
+function initAudio() {
+    if(!audioCtx) {
+        audioCtx = new AudioCtx();
+        startBackgroundMusic();
+    }
+}
+
+function playTone(freq, type, duration, vol=0.1) {
+    if(!audioCtx) return;
+    try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    } catch(e) {} 
+}
+
+function startBackgroundMusic() {
+    if(isMusicPlaying) return;
+    isMusicPlaying = true;
+    const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; 
+    let noteIdx = 0;
+    bgMusicInterval = setInterval(() => {
+        playTone(notes[noteIdx], 'triangle', 0.15, 0.02);
+        noteIdx = (noteIdx + 1) % notes.length;
+    }, 250);
+}
+
+function createClickParticles(x, y) {
+    for(let i=0; i<10; i++) {
+        const p = document.createElement('div');
+        p.className = 'click-particle';
+        p.textContent = ['✨','💫','🌟','💥','🔥'][Math.floor(Math.random()*5)];
+        document.body.appendChild(p);
+        
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 40 + Math.random() * 80;
+        const tx = Math.cos(angle) * dist;
+        const ty = Math.sin(angle) * dist;
+        
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        p.style.setProperty('--tx', tx + 'px');
+        p.style.setProperty('--ty', ty + 'px');
+        
+        setTimeout(() => p.remove(), 700);
+    }
+}
+function createExplosionParticles() {
+    const rect = $('gift-box-container').getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top + rect.height/2;
+    for(let i=0; i<25; i++) {
+        setTimeout(() => createClickParticles(cx + (Math.random()-0.5)*120, cy + (Math.random()-0.5)*120), i*40);
+    }
+}
+
+function showScreen(id){
+  $$('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+function showAfterBlack(blackId,nextId,delay=1500){
+  showScreen(blackId);
+  setTimeout(()=>showScreen(nextId),delay);
+}
+
+// Инициализация видео
+const video = $('cat-video');
+video.src = "catvidd.mp4";
+let isVideoLoaded = false;
+video.onloadeddata = () => {
+    isVideoLoaded = true;
+    $('video-fallback-content').style.display = 'none';
+    video.style.display = 'block';
+};
+video.onerror = () => {
+    $('video-fallback-content').style.display = 'flex';
+    video.style.display = 'none';
+};
+setTimeout(() => {
+    if(!isVideoLoaded) {
+        $('video-fallback-content').style.display = 'flex';
+        video.style.display = 'none';
+    }
+}, 2500);
+
+// Звёзды и Огни
+(function(){
+  const c=$('stars'),f=document.createDocumentFragment();
+  for(let i=0;i<50;i++){
+    const s=document.createElement('div');
+    s.className='star'+(Math.random()>.85?' big':'');
+    s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*4}s;animation-duration:${1.5+Math.random()*2.5}s`;
+    f.appendChild(s);
+  }
+  c.appendChild(f);
+})();
+
+(function(){
+  const c=$('slotLights'),f=document.createDocumentFragment();
+  for(let i=0;i<10;i++){
+    const d=document.createElement('div');
+    d.className='slot-light';
+    f.appendChild(d);
+  }
+  c.appendChild(f);
+})();
+
+const confColors=['#ff6f61','#ffd700','#00d4aa','#ff9a76','#00c9a7'];
+
+function launchConfetti(){
+  const end=Date.now()+3000;
+  (function frame(){
+    confetti({particleCount:2,angle:60,spread:55,origin:{x:0,y:.6},colors:confColors,gravity:1.3,scalar:.85});
+    confetti({particleCount:2,angle:120,spread:55,origin:{x:1,y:.6},colors:confColors,gravity:1.3,scalar:.85});
+    if(Date.now()<end)requestAnimationFrame(frame);
+  })();
+}
+
+function confettiBurst(){
+  confetti({particleCount:50,spread:80,origin:{y:.5},colors:confColors,gravity:1.3,scalar:.85});
+}
+
+launchConfetti();
+
+// Навигация
+$('btn-start').onclick=()=>{ 
+    initAudio(); 
+    showScreen('screen-wishes'); 
+    logAction('Сайт открыт (Начат просмотр)'); 
+};
+$('btn-wishes-next').onclick=()=>showAfterBlack('screen-black1','screen-video');
+$('btn-skip-video').onclick=()=>{showAfterBlack('screen-black2','screen-slots');setTimeout(initSlots,1500)};
+$('btn-claim').onclick=()=>{ 
+    showScreen('screen-gift'); 
+    logAction('Добралась до подарка');
+};
+$('btn-gift-next').onclick=()=>{showScreen('screen-final');launchConfetti()};
+$('btn-close').onclick=()=>{
+  document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-family:Pacifico,cursive;font-size:clamp(1.5rem,4vw,2.5rem);background:linear-gradient(135deg,#0b1d2a,#163040);text-align:center;padding:20px">До встречи! 🎉</div>';
+};
+
+// Слоты
+const symbols = ['7️⃣','🍒','🍋','💎','🔔','⭐','🍀','🎰'];
+let reelsReady=false;
+
+function initSlots(){
+  if(reelsReady)return;
+  reelsReady=true;
+  for(let i=1;i<=3;i++){
+    const r=$('reel'+i);r.innerHTML='';
+    for(let j=0;j<5;j++){
+      const d=document.createElement('div');
+      d.className='slot-symbol';
+      d.textContent=symbols[Math.random()*symbols.length|0];
+      r.appendChild(d);
+    }
+  }
+}
+
+$('btn-spin').onclick = function(){
+  initAudio();
+  this.disabled=true; this.style.opacity='.5';
+  logAction('Крутит слоты!');
+  const SH=110, extra=[30,40,50];
+
+  let pitch = 900;
+  const spinSoundInterval = setInterval(() => {
+      playTone(pitch, 'square', 0.05, 0.08);
+      pitch = Math.max(200, pitch - 15);
+  }, 100);
+
+  for(let i=0;i<3;i++){
+    const r=$('reel'+(i+1)), total=extra[i]+1;
+    r.style.transition='none'; r.style.transform='translateY(0)'; r.innerHTML='';
+
+    const f=document.createDocumentFragment();
+    for(let j=0;j<total;j++){
+      const d=document.createElement('div');
+      d.className='slot-symbol';
+      d.textContent=j===total-1 ? '7️⃣' : symbols[Math.random()*symbols.length|0];
+      f.appendChild(d);
+    }
+    r.appendChild(f);
+
+    const dist=(total-1)*SH, dur=2 + i*0.8;
+    requestAnimationFrame(()=>{
+      r.style.transition=`transform ${dur}s cubic-bezier(.15,.85,.35,1)`;
+      r.style.transform=`translateY(-${dist}px)`;
+    });
+  }
+
+  setTimeout(()=>{
+    clearInterval(spinSoundInterval);
+    playTone(523.25, 'sine', 0.2, 0.4); 
+    setTimeout(() => playTone(659.25, 'sine', 0.2, 0.4), 150); 
+    setTimeout(() => playTone(783.99, 'sine', 0.4, 0.4), 300); 
+    setTimeout(() => playTone(1046.50, 'sine', 0.8, 0.5), 450); 
+    
+    $('jackpot-text').classList.add('visible');
+    $('jackpot-sub').classList.add('visible');
+    $('btn-claim').classList.add('visible');
+    confettiBurst();
+  }, 4100);
+};
+
+// Подарок
+let clicks = 0;
+$('gift-box-container').onmousedown = function(e) { handleGiftClick(e.clientX, e.clientY); };
+$('gift-box-container').ontouchstart = function(e) { 
+    if(e.touches.length > 0) handleGiftClick(e.touches[0].clientX, e.touches[0].clientY); 
+};
+
+function handleGiftClick(x, y) {
+  initAudio();
+  const maxClicks = CONFIG.clicksToOpenGift;
+  if(clicks >= maxClicks) return;
+  clicks++;
+  
+  const dots = $$('.gift-progress-dot');
+  if(dots[clicks-1]) dots[clicks-1].classList.add('filled');
+  
+  $('gift-counter').textContent = clicks < maxClicks 
+      ? `Осталось кликов: ${maxClicks - clicks}` 
+      : '';
+
+  const box = $('gift-box');
+  box.classList.remove('shake');
+  void box.offsetWidth; 
+  box.classList.add('shake');
+  
+  createClickParticles(x, y);
+  playTone(200 + (clicks*(400/maxClicks)), 'square', 0.1, 0.15); 
+
+  document.body.style.animation = 'none';
+  void document.body.offsetWidth;
+  document.body.style.animation = 'screenShakeJuice 0.25s ease-in-out';
+
+  if(clicks >= maxClicks){
+    playTone(400, 'sine', 0.5, 0.3);
+    logAction('ПОДАРОК ОТКРЫТ!');
+    setTimeout(()=>{
+      box.classList.add('gift-opened');
+      $('gift-counter').textContent = '🎉 Открыто!';
+      playTone(800, 'triangle', 0.8, 0.4); 
+      
+      setTimeout(()=>{
+        $('gift-content').classList.add('visible');
+        $('btn-gift-next').style.display = 'inline-block';
+        confettiBurst();
+        createExplosionParticles(); 
+      }, 600);
+    }, 400);
+  }
+}
+
+// Отправка сообщения в БД
+$('btn-send-msg').onclick = async function() {
+    const textVal = $('alice-message').value.trim();
+    if(!textVal) return;
+    
+    this.disabled = true;
+    this.innerHTML = "Отправка... ⏳";
+    
+    try {
+        await fetch('/api/index', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'sendMessage', text: textVal })
+        });
+        
+        $('msg-box-container').classList.add('sent-mode');
+        $('alice-message').style.display = 'none';
+        this.style.display = 'none';
+        $('msg-status-text').style.display = 'block';
+        
+        playTone(600, 'sine', 0.15, 0.3);
+        setTimeout(() => playTone(800, 'sine', 0.4, 0.3), 200);
+    } catch(e) {
+        this.disabled = false;
+        this.innerHTML = "Ошибка! Ещё раз 🚀";
+    }
+};
+
+</script>
+</body>
+  </html>
