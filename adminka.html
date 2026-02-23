@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Админка - FINAL BOSS</title>
+<style>
+  body { font-family: monospace; background: #0a0a0a; color: #00ff00; padding: 20px; margin: 0; box-sizing: border-box; }
+  h1 { border-bottom: 2px solid #00ff00; padding-bottom: 10px; font-size: 1.5rem; text-shadow: 0 0 10px #00ff00; }
+  .box { border: 1px solid #00ff00; padding: 15px; margin-bottom: 20px; border-radius: 5px; background: #111; box-shadow: 0 0 15px rgba(0,255,0,0.1); }
+  .log-entry { margin-bottom: 8px; border-bottom: 1px dashed #333; padding-bottom: 5px; font-size: 0.9rem; word-wrap: break-word; }
+  .timestamp { color: #888; font-size: 0.8em; margin-right: 5px; }
+  
+  button { background: #00ff00; color: #000; border: none; padding: 12px 20px; cursor: pointer; font-weight: bold; border-radius: 3px; width: 100%; margin-bottom: 10px; font-size: 1rem; text-transform: uppercase; }
+  button:hover { background: #00cc00; box-shadow: 0 0 10px #00ff00; }
+  button:active { transform: scale(0.98); }
+  
+  .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+  label { font-weight: bold; margin-bottom: 5px; color: #aaa; }
+  input, textarea { background: #000; border: 1px solid #00ff00; color: #00ff00; padding: 10px; font-family: monospace; border-radius: 3px; font-size: 1rem; outline: none; }
+  input:focus, textarea:focus { box-shadow: 0 0 8px rgba(0,255,0,0.5); }
+</style>
+</head>
+<body>
+  <h1>🛠️ ТЕРМИНАЛ: ALICE-DB</h1>
+  <button onclick="fetchAdminData()">Обновить данные 🔄</button>
+
+  <div class="box">
+    <h2>⚙️ Live Конфиг (Сразу на сайт)</h2>
+    <div class="form-group">
+      <label>Заголовок приветствия:</label>
+      <input type="text" id="conf-splashTitle">
+    </div>
+    <div class="form-group">
+      <label>Пожелание 1:</label>
+      <textarea id="conf-wish1" rows="2"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Пожелание 2:</label>
+      <textarea id="conf-wish2" rows="2"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Эмодзи подарка снаружи:</label>
+      <input type="text" id="conf-giftEmoji">
+    </div>
+    <div class="form-group">
+      <label>Эмодзи приза внутри:</label>
+      <input type="text" id="conf-prizeEmoji">
+    </div>
+    <div class="form-group">
+      <label>Кликов для открытия (число):</label>
+      <input type="number" id="conf-clicksToOpenGift">
+    </div>
+    <button onclick="saveConfig()" style="background: #ffcc00; color: #000;">💾 Сохранить в БД</button>
+  </div>
+
+  <div class="box">
+    <h2>💌 Входящие сообщения</h2>
+    <div id="messages-container">Загрузка...</div>
+  </div>
+
+  <div class="box">
+    <h2>📡 Радар действий</h2>
+    <div id="logs-container">Загрузка...</div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+async function fetchAdminData() {
+  $('messages-container').innerHTML = 'Синхронизация...';
+  $('logs-container').innerHTML = 'Синхронизация...';
+  
+  try {
+    const res = await fetch('/api/index?action=getAdminData');
+    const data = await res.json();
+    
+    if (data.success) {
+      // Рендер почты
+      renderList('messages-container', data.messages, m => `<b>Алиса:</b> <span style="color:#fff">${m.text}</span>`);
+      // Рендер логов
+      renderList('logs-container', data.logs, l => `<span style="color:#0ff">></span> ${l.action}`);
+      
+      // Заполнение полей конфига
+      if(data.config) {
+        if(data.config.splashTitle) $('conf-splashTitle').value = data.config.splashTitle;
+        if(data.config.wish1) $('conf-wish1').value = data.config.wish1;
+        if(data.config.wish2) $('conf-wish2').value = data.config.wish2;
+        if(data.config.giftEmoji) $('conf-giftEmoji').value = data.config.giftEmoji;
+        if(data.config.prizeEmoji) $('conf-prizeEmoji').value = data.config.prizeEmoji;
+        if(data.config.clicksToOpenGift) $('conf-clicksToOpenGift').value = data.config.clicksToOpenGift;
+      }
+    }
+  } catch(e) {
+    $('messages-container').innerHTML = 'ОШИБКА ДОСТУПА К БД. Проверь DATABASE_URL в Vercel.';
+  }
+}
+
+async function saveConfig() {
+  const btn = event.target;
+  btn.innerText = 'Сохранение... ⏳';
+  btn.disabled = true;
+
+  const newConfig = {
+    splashTitle: $('conf-splashTitle').value,
+    wish1: $('conf-wish1').value,
+    wish2: $('conf-wish2').value,
+    giftEmoji: $('conf-giftEmoji').value,
+    prizeEmoji: $('conf-prizeEmoji').value,
+    clicksToOpenGift: $('conf-clicksToOpenGift').value
+  };
+
+  try {
+    await fetch('/api/index', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'updateConfig', config: newConfig })
+    });
+    btn.innerText = 'УСПЕШНО! ✅';
+    setTimeout(() => { btn.innerText = '💾 Сохранить в БД'; btn.disabled = false; }, 2000);
+  } catch(e) {
+    alert('Ошибка при сохранении!');
+    btn.innerText = '💾 Сохранить в БД'; btn.disabled = false;
+  }
+}
+
+function renderList(id, items, formatter) {
+  const container = $(id);
+  container.innerHTML = '';
+  if (!items || items.length === 0) {
+    container.innerHTML = 'Пусто.';
+    return;
+  }
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    const time = new Date(item.created_at).toLocaleTimeString('ru-RU');
+    div.innerHTML = `<span class="timestamp">[${time}]</span> ${formatter(item)}`;
+    container.appendChild(div);
+  });
+}
+
+// Стартовый запуск
+fetchAdminData();
+</script>
+</body>
+</html>
